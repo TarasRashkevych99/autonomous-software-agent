@@ -47,7 +47,7 @@ export default async () => {
         }
     }
 
-    await agentLoop();
+    agentLoop();
 
     client.on('you', (me) => console.log(me)); // {id, name, x, y, score}
     client.on('agents sensing', (aa) => console.log(aa)); // [ {}, {id, x, y, score}]
