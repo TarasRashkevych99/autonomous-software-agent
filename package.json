@@ -1,0 +1,33 @@
+{
+  "name": "autonomous-software-agent",
+  "version": "1.0.0",
+  "description": "autonomous-software-agent",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TarasRashkevych99/autonomous-software-agent.git"
+  },
+  "keywords": [
+    "autonomous-system"
+  ],
+  "author": "Taras Rashkevych, Alessandro Rizzetto",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TarasRashkevych99/autonomous-software-agent/issues"
+  },
+  "homepage": "https://github.com/TarasRashkevych99/autonomous-software-agent#readme",
+  "dependencies": {
+    "@unitn-asa/deliveroo-js-client": "^0.0.22",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.36.0",
+    "eslint-config-google": "^0.14.0",
+    "prettier": "2.8.7"
+  }
+}
