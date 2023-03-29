@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node ./src/index.js",
+    "update:client": "npm install @unitn-asa/deliveroo-js-client@latest",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
