@@ -1,6 +1,6 @@
-import Agent from './agent/Agent.js';
+import RandomAgent from './agent/RandomAgent.js';
 
 export default async () => {
-    const agent = new Agent();
-    await agent.play();
+    const randomAgent = new RandomAgent();
+    await randomAgent.play();
 };
