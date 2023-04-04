@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
-import start_agent from './app.js';
+import start_game from './app.js';
 
 dotenv.config();
 
-await start_agent();
+await start_game();
