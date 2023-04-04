@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/TarasRashkevych99/autonomous-software-agent#readme",
   "dependencies": {
-    "@unitn-asa/deliveroo-js-client": "^0.0.26",
+    "@unitn-asa/deliveroo-js-client": "^0.0.27",
     "dotenv": "^16.0.3"
   },
   "devDependencies": {
