@@ -1,4 +1,5 @@
 import { DeliverooApi } from '@unitn-asa/deliveroo-js-client';
+import ParcelsOnMap from './ParcelsOnMap.js';
 
 class Agent {
     constructor(options) {
@@ -6,7 +7,8 @@ class Agent {
             throw new TypeError('Cannot instantiate abstract class');
         }
         this.apiService = new DeliverooApi(process.env.HOST, process.env.TOKEN);
-        this.data = new Map();
+        this.data = new ParcelsOnMap();
+        this.startTimestamp = Date.now();
         this.possibleMoves = ['up', 'right', 'down', 'left'];
         this.registerListeners();
     }
@@ -34,6 +36,26 @@ class Agent {
 
     async timer(ms) {
         await this.apiService.timer(ms);
+    }
+
+    async pickANDput() {
+        await this.timer(100); // wait 0.1 sec and retry; if stucked, this avoid infinite loop
+        await this.putdown();
+        await this.timer(100); // wait 0.1 sec
+        await this.pickup();
+        await this.timer(100); // wait 0.1 sec
+    }
+
+    distance({ x: x1, y: y1 }, { x: x2, y: y2 }) {
+        const dx = Math.abs(Math.round(x1) - Math.round(x2));
+        const dy = Math.abs(Math.round(y1) - Math.round(y2));
+        return dx + dy;
+    }
+
+    onPosition() {
+        const x = this.apiService.onYou((me) => {
+            return `${me.x}`;
+        });
     }
 
     getDirectionName(directionIndex) {
