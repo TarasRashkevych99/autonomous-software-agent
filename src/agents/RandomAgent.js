@@ -16,9 +16,23 @@ export default class RandomAgent extends Agent {
         });
     }
 
+    onMap() {
+        this.apiService.onMap((width, height, cells) => {
+            console.log('map', width, height, cells);
+        });
+    }
+
+    // this method lists all the tiles on which you can move
     onTile() {
         this.apiService.onTile((x, y, isDeliveryTile) => {
             console.log('tile', x, y, isDeliveryTile);
+        });
+    }
+
+    // this method lists all the tiles on which you cannot move (walls in the game)
+    onNotTile() {
+        this.apiService.onNotTile((x, y) => {
+            console.log('Not tile', x, y);
         });
     }
 
