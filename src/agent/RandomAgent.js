@@ -79,47 +79,48 @@ class RandomAgent extends Agent {
 
         while (true) {
             //Definisco la parcel più vicina come parcel obiettivo, la raggiungo con il metodo getDirectionToParcel e la raccolgo
-            this.pickANDput();
-            if (this.nearestParcel.distance > 0) {
-                var objectiveParcel = this.nearestParcel;
-                var directionIndex = this.apiService.onParcelsSensing(
-                    (parcels) => {
-                        return this.data.getDirectionToParcel(
-                            this.you,
-                            objectiveParcel
-                        );
-                    }
-                );
-                console.log(directionIndex);
-            }
+            // this.pickANDput();
+            // if (this.nearestParcel.distance > 0) {
+            //     var objectiveParcel = this.nearestParcel;
+            //     var directionIndex = this.apiService.onParcelsSensing(
+            //         (parcels) => {
+            //             return this.data.getDirectionToParcel(
+            //                 this.you,
+            //                 objectiveParcel
+            //             );
+            //         }
+            //     );
+            //     console.log(directionIndex);
+            // }
 
             /////////////////////// Move in a random direction
             // while (true) {
             //     this.pickANDput();
 
-            //     directionIndex += [0, 1, 3][Math.floor(Math.random() * 3)]; // straigth or turn left or right, not going back
+            directionIndex += [0, 1, 3][Math.floor(Math.random() * 3)]; // straigth or turn left or right, not going back
 
-            //     var status = await this.move(this.getDirectionName(directionIndex));
-            //console.log(this.you.x);
-            //console.log(this.parcels.x);
+            var status = await this.move(this.getDirectionName(directionIndex));
+            console.log(this.you.x);
+            console.log(this.parcels.x);
 
-            // if (!status) {
-            //     console.log('move failed');
+            if (!status) {
+                console.log('move failed');
 
-            //     directionIndex += [2, 1, 3][Math.floor(Math.random() * 3)]; // backward or turn left or right, not try again straight, which just failed
-            // }
+                directionIndex += [2, 1, 3][Math.floor(Math.random() * 3)]; // backward or turn left or right, not try again straight, which just failed
+                // }
 
-            /////////////////////// Move towards the nearest parcel
-            //     while (true) {
-            //         this.pickANDput();
-            //         if (this.nearestParcel.distance > 0) {
-            //             var directionIndex = this.data.getDirectionToParcel(
-            //                 this.you,
-            //                 this.nearestParcel
-            //             );
-            //             await this.move(this.getDirectionName(directionIndex));
-            //         }
-            //     }
+                /////////////////////// Move towards the nearest parcel
+                //     while (true) {
+                //         this.pickANDput();
+                //         if (this.nearestParcel.distance > 0) {
+                //             var directionIndex = this.data.getDirectionToParcel(
+                //                 this.you,
+                //                 this.nearestParcel
+                //             );
+                //             await this.move(this.getDirectionName(directionIndex));
+                //         }
+                //     }
+            }
         }
     }
 }

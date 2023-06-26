@@ -52,8 +52,6 @@ class ParcelsOnMap extends Map {
             if (!last || last.x != p.x || last.y != p.y) {
                 history.push({ x: p.x, y: p.y });
             }
-            //confronto la posizione delle parcels per trovare la più vicina a onYou
-            //e la stampo con il suo score
 
             // console.log(
             //     p.id +
