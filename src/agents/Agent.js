@@ -14,7 +14,9 @@ export default class Agent {
     registerListeners() {
         this.onConnect();
         this.onDisconnect();
+        this.onMap();
         this.onTile();
+        this.onNotTile();
         this.onYou();
         this.onAgentsSensing();
         this.onParcelsSensing();
@@ -50,7 +52,15 @@ Agent.prototype.onDisconnect = function () {
     throw new Error('Method not implemented');
 };
 
+Agent.prototype.onMap = function () {
+    throw new Error('Method not implemented');
+};
+
 Agent.prototype.onTile = function () {
+    throw new Error('Method not implemented');
+};
+
+Agent.prototype.onNotTile = function () {
     throw new Error('Method not implemented');
 };
 
