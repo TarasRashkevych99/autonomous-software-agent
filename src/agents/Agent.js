@@ -1,6 +1,6 @@
 import { DeliverooApi } from '@unitn-asa/deliveroo-js-client';
 
-class Agent {
+export default class Agent {
     constructor(options) {
         if (this.constructor === Agent) {
             throw new TypeError('Cannot instantiate abstract class');
@@ -69,5 +69,3 @@ Agent.prototype.onParcelsSensing = function () {
 Agent.prototype.play = function () {
     throw new Error('Method not implemented');
 };
-
-export default Agent;
