@@ -1,8 +1,12 @@
 import Agent from './Agent.js';
 
-class RandomAgent extends Agent {
+export default class PlanLibraryOnlyAgent extends Agent {
     constructor(options) {
         super(options);
+        this.currentTiles = new Map();
+        this.myself = null;
+        this.currentAgents = new Map();
+        this.currentParcels = new Map();
     }
     onConnect() {
         this.apiService.onConnect(() => {
@@ -18,12 +22,19 @@ class RandomAgent extends Agent {
 
     onTile() {
         this.apiService.onTile((x, y, isDeliveryTile) => {
-            console.log('tile', x, y, isDeliveryTile);
+            this.currentTiles.console.log('tile', x, y, isDeliveryTile);
         });
     }
 
     onYou() {
         this.apiService.onYou((me) => {
+            if (this.myself == null) {
+                this.myself = me;
+            } else {
+                this.myself.x = me.x;
+                this.myself.y = me.y;
+                this.myself.score = me.score;
+            }
             console.log(
                 `${me.name} (${me.id}) is at (${me.x}, ${me.y}) with score ${me.score}`
             );
@@ -68,5 +79,3 @@ class RandomAgent extends Agent {
         }
     }
 }
-
-export default RandomAgent;
