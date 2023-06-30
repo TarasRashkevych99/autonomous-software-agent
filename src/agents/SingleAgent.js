@@ -1,6 +1,6 @@
 import Agent from './Agent.js';
 
-export default class SingleAgent extends Agent {
+export default class Sensing extends Agent {
     constructor(options) {
         super(options);
         this.me = {};
@@ -140,3 +140,84 @@ export default class SingleAgent extends Agent {
         this.apiService.onParcelsSensing(this.agentLoop); //maybe this can work
     }
 }
+
+function agentLoop() {
+    /**
+     * Options
+     */
+    const options = [];
+    for (const parcel of this.visibleParcels.values()) {
+        if (!parcel.carriedBy) {
+            options.push({ desire: 'go_pick_up', args: [parcel] });
+        }
+    }
+
+    /**
+     * Select best intention
+     */
+    let best_option;
+    let nearest = Number.MAX_VALUE;
+    for (const option of options) {
+        let current_i = option.desire;
+        let current_d = this.distance(option.args[0], this.me);
+        if (current_i == 'go_pick_up' && current_d < nearest) {
+            best_option = option;
+            nearest = this.distance(option.args[0], this.me);
+        }
+    }
+
+    /**
+     * Revise/queue intention
+     */
+    if (best_option) this.queue(best_option.desire, ...best_option.args);
+}
+
+apiService.onParcelsSensing(agentLoop);
+
+/**
+ * Intention revision and execution
+ */
+class Agent {
+    intetion_queue = new Array();
+
+    async intentionLoop() {
+        while (true) {
+            if (this.intetion_queue.length > 0) {
+                const intention = this.intetion_queue.shift();
+                if (intention) {
+                    await this.execute.achieve();
+                }
+                await new Promise((resolve) => setImmediate(resolve)); // wait for the next tick
+            }
+        }
+    }
+
+    async queue(desire, ...args) {
+        const last = this.intetion_queue[this.intetion_queue.length - 1]; // get the last intention
+        const current = new Intention(desire, ...args); // create a new intention
+        this.intetion_queue.push(current); // add the new intention to the queue to be executed
+    }
+
+    async stop() {
+        console.log('stop agent queued intentions');
+        for (const intention of this.intetion_queue) {
+            intention.stop();
+        }
+    }
+}
+
+const agent = new Agent();
+agent.intentionLoop(); // start the intention loop to execute the intentions in the queue
+
+class Intention extends Promise {}
+
+const plans = [];
+class Plan {}
+
+class Plan1 extends Plan {}
+class Plan2 extends Plan {}
+
+plans.push(new Plan1());
+plans.push(new Plan2());
+
+// ref lab4/bdi_control_loop.js
