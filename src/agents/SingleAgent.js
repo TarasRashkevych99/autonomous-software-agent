@@ -6,6 +6,9 @@ export default class SingleAgent extends Agent {
         this.me = {};
         this.map = {};
         this.visibleAgents = new Map();
+        this.visibleParcels = new Map();
+        this.deliveryTiles = [];
+        //const client = this.apiService;
     }
 
     onConnect() {
@@ -19,13 +22,57 @@ export default class SingleAgent extends Agent {
             console.log('socket disconnect', this.apiService.socket.id);
         });
     }
+    /**
+     * Beliefs (information that the agent has about the world)
+     */
+
+    onYou() {
+        this.apiService.onYou((me) => {
+            this.me = {
+                id: me.id,
+                name: me.name,
+                x: me.x,
+                y: me.y,
+                score: me.score,
+            };
+        });
+    }
+
+    // this method lists all the agents that you can see
+    onAgentsSensing() {
+        this.apiService.onAgentsSensing((agents) => {
+            for (const agent of agents) {
+                // round the coordinates to avoid floating point positions
+                agent.x = Math.round(agent.x);
+                agent.y = Math.round(agent.y);
+                this.visibleAgents.set(agent.id, agent);
+            }
+        });
+    }
+
+    // this method lists all the parcels that you can see
+    onParcelsSensing() {
+        this.apiService.onParcelsSensing((parcels) => {
+            for (const parcel of parcels) {
+                // set is used to avoid duplicates
+                this.visibleParcels.set(parcel.id, parcel);
+            }
+        });
+    }
 
     onMap() {
         this.apiService.onMap((width, height, cells) => {
-            console.log('map', width, height, cells);
+            //console.log('map', width, height, cells);
             this.map.width = width;
             this.map.height = height;
             this.map.cells = cells;
+
+            // get the delivery tiles
+            cells.forEach((cell) => {
+                if (cell.isDeliveryTile) {
+                    this.deliveryTiles.push([cell.x, cell.y]);
+                }
+            });
         });
     }
 
@@ -43,114 +90,53 @@ export default class SingleAgent extends Agent {
         // });
     }
 
-    onYou() {
-        this.apiService.onYou((me) => {
-            // console.log(
-            //     `${me.name} (${me.id}) is at (${me.x}, ${me.y}) with score ${me.score}`
-            // );
-            this.me = {
-                id: me.id,
-                name: me.name,
-                x: me.x,
-                y: me.y,
-                score: me.score,
-            };
-        });
-    }
+    /**
+     * BDI loop
+     */
 
-    onAgentsSensing() {
-        this.apiService.onAgentsSensing((agents) => {
-            // console.log(agents);
-            // this.visibleAgents = agents;
-            console.log('visible agents', this.visibleAgents);
-            for (const agent of agents) {
-                if (agent.x % 1 != 0 || agent.y % 1 != 0) {
-                    continue;
-                }
-
-                // I meet someone for the first time
-                if (!this.visibleAgents.has(agent.id)) {
-                    this.visibleAgents.set(agent.id, [agent]);
-                } else {
-                    // I already met him
-                    const history = this.visibleAgents.get(agent.id);
-
-                    // this is about the last time I saw him
-                    const last = history[history.length - 1];
-                    const second_last =
-                        history.length > 2
-                            ? history[history.length - 2]
-                            : 'no knowledge';
-
-                    if (last != 'lost') {
-                        // I was seeing him also last time
-                        if (last.x != agent.x || last.y != agent.y) {
-                            // He moved
-                            history.push(agent);
-                        }
-                    } else {
-                        // I see him again after some time and he could have moved or not in the meanwhile
-                        history.push(agent);
-                    }
-                }
-            }
-            for (const [id, history] of this.visibleAgents.entries()) {
-                const last = history[history.length - 1];
-                const second_last =
-                    history.length > 1
-                        ? history[history.length - 2]
-                        : 'no knowledge';
-
-                if (!agents.map((a) => a.id).includes(id)) {
-                    // If I am not seeing him anymore
-
-                    if (last != 'lost') {
-                        // Just went off
-                        history.push('lost');
-                    } else {
-                        // A while since last time I saw him
-
-                        if (this.distance(this.me, second_last) <= 3) {
-                            this.visibleAgents.delete(id);
-                        }
-                    }
-                } else {
-                    // If I am still seing him ... see above
-                    // console.log( 'still seing him', last.name )
-                }
-            }
-        });
-    }
-
-    onParcelsSensing() {
-        // this.apiService.onParcelsSensing((parcels) => {
-        //     console.log(parcels);
-        // });
-    }
-
-    async play() {
-        var directionIndex = 1; // 'right'
-
-        while (true) {
-            await this.timer(100); // wait 0.1 sec and retry; if stucked, this avoid infinite loop
-
-            await this.putdown();
-
-            await this.timer(100); // wait 0.1 sec
-
-            await this.pickup();
-
-            await this.timer(100); // wait 0.1 sec
-
-            directionIndex += [0, 1, 3][Math.floor(Math.random() * 3)]; // straigth or turn left or right, not going back
-
-            var status = await this.move(this.getDirectionName(directionIndex));
-
-            if (!status) {
-                console.log('move failed');
-
-                directionIndex += [2, 1, 3][Math.floor(Math.random() * 3)]; // backward or turn left or right, not try again straight, which just failed
+    agentLoop() {
+        /**
+         * Options
+         */
+        const options = [];
+        for (const parcel of this.visibleParcels.values()) {
+            if (!parcel.carriedBy) {
+                options.push({ desire: 'go_pick_up', args: [parcel] });
             }
         }
+
+        /**
+         * Select best intention
+         */
+        let best_option;
+        let nearest = Number.MAX_VALUE;
+        for (const option of options) {
+            let current_i = option.desire;
+            let current_d = this.distance(option.args[0], this.me);
+            if (current_i == 'go_pick_up' && current_d < nearest) {
+                best_option = option;
+                nearest = this.distance(option.args[0], this.me);
+            }
+        }
+
+        /**
+         * Revise/queue intention
+         */
+        if (best_option) this.queue(best_option.desire, ...best_option.args);
+    }
+
+    /**
+     * TO DO
+     * 
+     *  // recall the agentLoop method when the agent perceives something new
+    // in bdi_control_loop.js, this is done in the onParcelsSensing method
+    // in this case we don't have to pass a function but a method of the class
+    
+    //prof version : client.onParcelSensing (agentLoop)
+    //this.apiService.onParcelsSensing(this.agentLoop);
+        */
+
+    activateLoop() {
+        this.apiService.onParcelsSensing(this.agentLoop); //maybe this can work
     }
 }
