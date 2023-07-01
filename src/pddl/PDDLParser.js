@@ -5,7 +5,7 @@ const BeliefSet = new Beliefset();
 
 async function readDomain() {
     domain = await new Promise((resolve, reject) => {
-        fs.readFile('./singleAgent/domain.pddl', 'utf8', function (err, data) {
+        fs.readFile('./domain.pddl', 'utf8', function (err, data) {
             if (err) {
                 reject(err);
             }

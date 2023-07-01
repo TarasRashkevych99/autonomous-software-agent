@@ -1,6 +1,7 @@
 import Agent from './Agent.js';
+import Plan1 from '../models/Plan1.js';
 
-export default class Sensing extends Agent {
+export default class SingleAgent extends Agent {
     constructor(options) {
         super(options);
         this.me = {};
@@ -8,7 +9,9 @@ export default class Sensing extends Agent {
         this.visibleAgents = new Map();
         this.visibleParcels = new Map();
         this.deliveryTiles = [];
-        //const client = this.apiService;
+        this.intetion_queue = new Array();
+        this.plans = [];
+        plans.push(new Plan1());
     }
 
     onConnect() {
@@ -69,8 +72,8 @@ export default class Sensing extends Agent {
 
             // get the delivery tiles
             cells.forEach((cell) => {
-                if (cell.isDeliveryTile) {
-                    this.deliveryTiles.push([cell.x, cell.y]);
+                if (cell.delivery) {
+                    this.deliveryTiles.push({ x: cell.x, y: cell.y });
                 }
             });
         });
@@ -94,10 +97,11 @@ export default class Sensing extends Agent {
      * BDI loop
      */
 
+    async play() {
+        this.apiService.onParcelsSensing(this.agentLoop); //maybe this can work
+    }
+
     agentLoop() {
-        /**
-         * Options
-         */
         const options = [];
         for (const parcel of this.visibleParcels.values()) {
             if (!parcel.carriedBy) {
@@ -105,9 +109,6 @@ export default class Sensing extends Agent {
             }
         }
 
-        /**
-         * Select best intention
-         */
         let best_option;
         let nearest = Number.MAX_VALUE;
         for (const option of options) {
@@ -124,61 +125,6 @@ export default class Sensing extends Agent {
          */
         if (best_option) this.queue(best_option.desire, ...best_option.args);
     }
-
-    /**
-     * TO DO
-     * 
-     *  // recall the agentLoop method when the agent perceives something new
-    // in bdi_control_loop.js, this is done in the onParcelsSensing method
-    // in this case we don't have to pass a function but a method of the class
-    
-    //prof version : client.onParcelSensing (agentLoop)
-    //this.apiService.onParcelsSensing(this.agentLoop);
-        */
-
-    activateLoop() {
-        this.apiService.onParcelsSensing(this.agentLoop); //maybe this can work
-    }
-}
-
-function agentLoop() {
-    /**
-     * Options
-     */
-    const options = [];
-    for (const parcel of this.visibleParcels.values()) {
-        if (!parcel.carriedBy) {
-            options.push({ desire: 'go_pick_up', args: [parcel] });
-        }
-    }
-
-    /**
-     * Select best intention
-     */
-    let best_option;
-    let nearest = Number.MAX_VALUE;
-    for (const option of options) {
-        let current_i = option.desire;
-        let current_d = this.distance(option.args[0], this.me);
-        if (current_i == 'go_pick_up' && current_d < nearest) {
-            best_option = option;
-            nearest = this.distance(option.args[0], this.me);
-        }
-    }
-
-    /**
-     * Revise/queue intention
-     */
-    if (best_option) this.queue(best_option.desire, ...best_option.args);
-}
-
-apiService.onParcelsSensing(agentLoop);
-
-/**
- * Intention revision and execution
- */
-class Agent {
-    intetion_queue = new Array();
 
     async intentionLoop() {
         while (true) {
@@ -205,19 +151,3 @@ class Agent {
         }
     }
 }
-
-const agent = new Agent();
-agent.intentionLoop(); // start the intention loop to execute the intentions in the queue
-
-class Intention extends Promise {}
-
-const plans = [];
-class Plan {}
-
-class Plan1 extends Plan {}
-class Plan2 extends Plan {}
-
-plans.push(new Plan1());
-plans.push(new Plan2());
-
-// ref lab4/bdi_control_loop.js
