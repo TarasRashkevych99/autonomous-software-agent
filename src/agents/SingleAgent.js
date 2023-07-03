@@ -138,6 +138,7 @@ export default class SingleAgent extends Agent {
         }
     }
 
+    // TO DO: modify it to a better queue system
     async queue(desire, ...args) {
         const last = this.intetion_queue[this.intetion_queue.length - 1]; // get the last intention
         const current = new Intention(desire, ...args); // create a new intention
