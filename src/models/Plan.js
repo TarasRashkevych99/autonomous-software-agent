@@ -4,7 +4,8 @@ export default class Plan extends SingleAgent {
     #sub_intentions = [];
     stop() {
         console.log('stop plan and all sub intentions');
-        for (const intention of this.#intentions) {
+        for (const intention of this.#sub_intentions) {
+            //stop all sub intentions
             intention.stop();
         }
     }

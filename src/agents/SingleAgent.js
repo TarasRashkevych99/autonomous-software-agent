@@ -11,7 +11,7 @@ export default class SingleAgent extends Agent {
         this.deliveryTiles = [];
         this.intetion_queue = new Array();
         this.plans = [];
-        plans.push(new Plan1());
+        plans.push(new Plan1()); // building the plan library // not sure if this is the right way to do it
     }
 
     onConnect() {
@@ -103,25 +103,30 @@ export default class SingleAgent extends Agent {
 
     agentLoop() {
         const options = [];
+
+        // TO DO: Extend this part for the generation of the options
         for (const parcel of this.visibleParcels.values()) {
             if (!parcel.carriedBy) {
                 options.push({ desire: 'go_pick_up', args: [parcel] });
             }
         }
 
+        // TO DO: Revisit the selection of the best option
         let best_option;
         let nearest = Number.MAX_VALUE;
         for (const option of options) {
-            let current_i = option.desire;
-            let current_d = this.distance(option.args[0], this.me);
-            if (current_i == 'go_pick_up' && current_d < nearest) {
-                best_option = option;
-                nearest = this.distance(option.args[0], this.me);
+            if (option[0] == 'go_pick_up') {
+                let [go_pick_up, x, y, id] = option;
+                let current_d = distance({ x, y }, me);
+                if (current_d < nearest) {
+                    best_option = option;
+                    nearest = current_d;
+                }
             }
         }
 
         /**
-         * Revise/queue intention
+         * Revise/queue intention if I have a better option
          */
         if (best_option) this.queue(best_option.desire, ...best_option.args);
     }
