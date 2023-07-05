@@ -1,17 +1,18 @@
 import Agent from './Agent.js';
-import Plan1 from '../models/Plan1.js';
+// import GoPickUp from '../models/GoPickUp.js';
 
 export default class SingleAgent extends Agent {
     constructor(options) {
         super(options);
         this.me = {};
         this.map = {};
+        this.config = {};
         this.visibleAgents = new Map();
         this.visibleParcels = new Map();
         this.deliveryTiles = [];
         this.intetion_queue = new Array();
         this.plans = [];
-        plans.push(new Plan1()); // building the plan library // not sure if this is the right way to do it
+        // plans.push(new GoPickUp()); // building the plan library // not sure if this is the right way to do it
     }
 
     onConnect() {
@@ -25,9 +26,23 @@ export default class SingleAgent extends Agent {
             console.log('socket disconnect', this.apiService.socket.id);
         });
     }
-    /**
-     * Beliefs (information that the agent has about the world)
-     */
+
+    onConfig() {
+        this.apiService.onConfig((config) => {
+            this.config = config;
+            const { PARCEL_DECADING_INTERVAL } = this.config;
+            if (PARCEL_DECADING_INTERVAL === 'infinite') {
+                this.config.PARCEL_DECADING_INTERVAL = 0;
+            } else {
+                this.config.PARCEL_DECADING_INTERVAL = parseInt(
+                    PARCEL_DECADING_INTERVAL.split('s')[0]
+                );
+            }
+            this.config.MOVEMENT_DURATION =
+                this.config.MOVEMENT_DURATION / 1000;
+            console.log('config', this.config);
+        });
+    }
 
     onYou() {
         this.apiService.onYou((me) => {
@@ -44,6 +59,7 @@ export default class SingleAgent extends Agent {
     // this method lists all the agents that you can see
     onAgentsSensing() {
         this.apiService.onAgentsSensing((agents) => {
+            console.log('agents', agents);
             for (const agent of agents) {
                 // round the coordinates to avoid floating point positions
                 agent.x = Math.round(agent.x);
@@ -98,37 +114,49 @@ export default class SingleAgent extends Agent {
      */
 
     async play() {
-        this.apiService.onParcelsSensing(this.agentLoop); //maybe this can work
-    }
-
-    agentLoop() {
-        const options = [];
-
-        // TO DO: Extend this part for the generation of the options
-        for (const parcel of this.visibleParcels.values()) {
-            if (!parcel.carriedBy) {
-                options.push({ desire: 'go_pick_up', args: [parcel] });
+        this.apiService.onParcelsSensing(async (parcels) => {
+            this.visibleParcels.clear();
+            for (const parcel of parcels) {
+                // set is used to avoid duplicates
+                this.visibleParcels.set(parcel.id, parcel);
             }
-        }
-
-        // TO DO: Revisit the selection of the best option
-        let best_option;
-        let nearest = Number.MAX_VALUE;
-        for (const option of options) {
-            if (option[0] == 'go_pick_up') {
-                let [go_pick_up, x, y, id] = option;
-                let current_d = distance({ x, y }, me);
-                if (current_d < nearest) {
-                    best_option = option;
-                    nearest = current_d;
+            const options = [];
+            console.log('playing');
+            console.log('visible parcels', this.visibleParcels);
+            // console.log(this);
+            // TO DO: Extend this part for the generation of the options
+            for (const parcel of this.visibleParcels.values()) {
+                if (!parcel.carriedBy) {
+                    options.push({ desire: 'go_pick_up', args: [parcel] });
                 }
             }
-        }
 
-        /**
-         * Revise/queue intention if I have a better option
-         */
-        if (best_option) this.queue(best_option.desire, ...best_option.args);
+            // TO DO: Revisit the selection of the best option
+            let best_option;
+            let nearest = Number.MAX_VALUE;
+            for (const option of options) {
+                if (option[0] == 'go_pick_up') {
+                    let [go_pick_up, x, y, id] = option;
+                    let current_d = distance({ x, y }, me);
+                    if (current_d < nearest) {
+                        best_option = option;
+                        nearest = current_d;
+                    }
+                }
+            }
+            console.log('before move');
+            // await this.move(this.PossibleMove.Down);
+            console.log('============================');
+            console.log(this.me);
+            console.log(this.chooseBestParcelAndDeliveryTile());
+            console.log('============================');
+            console.log('after move');
+            /**
+             * Revise/queue intention if I have a better option
+             */
+            if (best_option)
+                this.queue(best_option.desire, ...best_option.args);
+        }); //maybe this can work
     }
 
     async intentionLoop() {
@@ -155,5 +183,43 @@ export default class SingleAgent extends Agent {
         for (const intention of this.intetion_queue) {
             intention.stop();
         }
+    }
+
+    chooseBestParcelAndDeliveryTile() {
+        let maxReward = Number.MIN_VALUE;
+        let bestParcel;
+        let bestDeliveryTile;
+        let bestDistance = Number.MAX_VALUE;
+        let parcelDecadingInterval = this.config.PARCEL_DECADING_INTERVAL;
+        let agentMovementDuration = this.config.MOVEMENT_DURATION;
+        let agentVelocity = 1 / agentMovementDuration;
+        for (const parcel of this.visibleParcels.values()) {
+            if (!parcel.carriedBy) {
+                for (const deliveryTile of this.deliveryTiles) {
+                    const distanceFromMeToParcel = this.distance(
+                        { x: this.me.x, y: this.me.y },
+                        parcel
+                    );
+                    const distanceFromParceltoDeliveryTile = this.distance(
+                        parcel,
+                        deliveryTile
+                    );
+                    const totalDistance =
+                        distanceFromMeToParcel +
+                        distanceFromParceltoDeliveryTile;
+                    const timeToDeliverParcel = totalDistance / agentVelocity;
+                    const parcelLostReward =
+                        timeToDeliverParcel / parcelDecadingInterval;
+                    const parcelRemainingReward =
+                        parcel.reward - parcelLostReward;
+                    if (parcelRemainingReward > maxReward) {
+                        bestParcel = parcel;
+                        bestDeliveryTile = deliveryTile;
+                        maxReward = parcelRemainingReward;
+                    }
+                }
+            }
+        }
+        return { bestParcel, bestDeliveryTile, maxReward };
     }
 }

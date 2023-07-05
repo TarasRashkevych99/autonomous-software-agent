@@ -6,8 +6,12 @@ export default class Agent {
             throw new TypeError('Cannot instantiate abstract class');
         }
         this.apiService = new DeliverooApi(process.env.HOST, process.env.TOKEN);
-        this.data = new Map();
-        this.possibleMoves = ['up', 'right', 'down', 'left'];
+        this.PossibleMove = Object.freeze({
+            Up: 'up',
+            Right: 'right',
+            Down: 'down',
+            Left: 'left',
+        });
         this.registerListeners();
     }
 
@@ -15,6 +19,7 @@ export default class Agent {
         this.onConnect();
         this.onDisconnect();
         this.onMap();
+        this.onConfig();
         this.onTile();
         this.onNotTile();
         this.onYou();
@@ -59,6 +64,10 @@ Agent.prototype.onDisconnect = function () {
 };
 
 Agent.prototype.onMap = function () {
+    throw new Error('Method not implemented');
+};
+
+Agent.prototype.onConfig = function () {
     throw new Error('Method not implemented');
 };
 
