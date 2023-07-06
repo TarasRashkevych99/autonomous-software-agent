@@ -144,13 +144,14 @@ export default class SingleAgent extends Agent {
                     }
                 }
             }
-            console.log('before move');
             // await this.move(this.PossibleMove.Down);
             console.log('============================');
             console.log(this.me);
-            console.log(this.chooseBestParcelAndDeliveryTile());
+            const bla = this.getBestOptions();
+            console.log('Options lenght', bla.length);
+            console.log('Best option', bla[0]);
+            console.log('Options', bla);
             console.log('============================');
-            console.log('after move');
             /**
              * Revise/queue intention if I have a better option
              */
@@ -185,41 +186,68 @@ export default class SingleAgent extends Agent {
         }
     }
 
-    chooseBestParcelAndDeliveryTile() {
-        let maxReward = Number.MIN_VALUE;
-        let bestParcel;
-        let bestDeliveryTile;
-        let bestDistance = Number.MAX_VALUE;
+    getBestOptions() {
+        let options = [];
         let parcelDecadingInterval = this.config.PARCEL_DECADING_INTERVAL;
         let agentMovementDuration = this.config.MOVEMENT_DURATION;
         let agentVelocity = 1 / agentMovementDuration;
         for (const parcel of this.visibleParcels.values()) {
-            if (!parcel.carriedBy) {
+            console.log('parcel', parcel.carriedBy);
+            if (!parcel.carriedBy || this.me.id === parcel.carriedBy) {
                 for (const deliveryTile of this.deliveryTiles) {
+                    let shortestAgentDistanceToParcel = Number.MAX_VALUE;
+                    for (const agent of this.visibleAgents.values()) {
+                        const distanceFromAgentToParcel = this.distance(
+                            { x: agent.x, y: agent.y },
+                            parcel
+                        );
+                        if (
+                            distanceFromAgentToParcel <
+                            shortestAgentDistanceToParcel
+                        ) {
+                            shortestAgentDistanceToParcel =
+                                distanceFromAgentToParcel;
+                        }
+                    }
                     const distanceFromMeToParcel = this.distance(
                         { x: this.me.x, y: this.me.y },
                         parcel
                     );
-                    const distanceFromParceltoDeliveryTile = this.distance(
-                        parcel,
-                        deliveryTile
-                    );
-                    const totalDistance =
-                        distanceFromMeToParcel +
-                        distanceFromParceltoDeliveryTile;
-                    const timeToDeliverParcel = totalDistance / agentVelocity;
-                    const parcelLostReward =
-                        timeToDeliverParcel / parcelDecadingInterval;
-                    const parcelRemainingReward =
-                        parcel.reward - parcelLostReward;
-                    if (parcelRemainingReward > maxReward) {
-                        bestParcel = parcel;
-                        bestDeliveryTile = deliveryTile;
-                        maxReward = parcelRemainingReward;
+                    if (
+                        distanceFromMeToParcel < shortestAgentDistanceToParcel
+                    ) {
+                        const distanceFromParceltoDeliveryTile = this.distance(
+                            parcel,
+                            deliveryTile
+                        );
+                        const totalDistance =
+                            distanceFromMeToParcel +
+                            distanceFromParceltoDeliveryTile;
+                        const timeToDeliverParcel =
+                            totalDistance / agentVelocity;
+                        const parcelLostReward =
+                            timeToDeliverParcel / parcelDecadingInterval;
+                        const parcelRemainingReward =
+                            parcel.reward - parcelLostReward;
+                        options.push({
+                            parcel,
+                            deliveryTile,
+                            parcelRemainingReward,
+                        });
                     }
                 }
             }
         }
-        return { bestParcel, bestDeliveryTile, maxReward };
+        options.sort((a, b) => {
+            return b.parcelRemainingReward - a.parcelRemainingReward;
+        });
+        const bestOption = options[0];
+        options = options.filter((option) => {
+            return (
+                option.parcelRemainingReward >
+                bestOption.parcelRemainingReward / 2
+            );
+        });
+        return options;
     }
 }
